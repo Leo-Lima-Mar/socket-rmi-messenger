@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="pt">
+
+<head>
+    <meta charset="utf-8">
+    <title>Mensageiro com RMI e Socket</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" type="text/css" href="splendor.min.css">
+    <link rel="icon" type="image/x-icon" href="favicon.ico">
+</head>
+
+<body>
+    <h1 id="titulo">Mensageiro com RMI e Socket</h1>
+
+    <p>Trabalho realizado para a disciplina de Sistemas Distribuídos - UERJ - 2017.2</p>
+    <p>Autor: Leonardo Lima Marinho</p>
+
+    <h2 id="arquitetura">Arquitetura</h2>
+
+    <p>A arquitetura se baseia na troca de mensagens RMI entre cliente e servidor e na troca de mensagens entre servidores com multicast, utilizando sockets UDP. Ela foi escolhida devido à sua simplicidade. Nesta arquitetura, apenas é necessário transmitir um único datagrama para o grupo a cada mensagem. Além disso, como o sistema executa em uma rede local, a probabilidade de pacotes serem perdidos é muito pequena.</p>
+
+    <p><img src="Arquitetura Multicast.png" alt="Arquitetura Multicast" /></p>
+
+    <h4 id="servidor">Servidor</h4>
+
+    <p>Conforme pode ser visto na imagem, o servidor é composto de duas partes: uma socket UDP e outra RMI. A parte socket é responsável por lidar com o envio e o recebimento de mensagens via multicast, conectando-se com outros servidores do mesmo grupo. Já a parte RMI conecta-se aos clientes deste servidor, tendo seu serviço registrado no RMI Registry.</p>
+
+    <h4 id="clientes">Clientes</h4>
+
+    <p>Cada cliente do sistema é similar à parte RMI do servidor. Seu serviço é registrado no RMI Registry, para que a parte cliente do servidor consiga acessá-lo. </p>
+
+    <h2 id="executando">Executando</h2>
+
+    <ul>
+        <li>Executar o script <code>start-server.sh</code>:
+            <ul>
+                <li>O RMI Registry será iniciado em localhost:9915.</li>
+
+                <li>O código fonte do sistema (arquivos .java) será compilado (em arquivos .class).</li>
+
+                <li>O servidor da aplicação será iniciado. Ao executar, o servidor exibe no terminal todas as mensagens, eventos de entrada e eventos de saída de clientes do sistema de mensagens conforme estes forem recebidos.</li>
+            </ul>
+        </li>
+
+        <li>Executar o script <code>start-client.sh</code>:
+            <ul>
+                <li>O cliente da aplicação será iniciado. Neste momento, será solicitado que o nome deste cliente seja digitado.</li>
+
+                <li>Após o nome do cliente ser inserido, todos os clientes ativos receberão uma mensagem avisando que este cliente entrou na conversa.</li>
+
+                <li>Para enviar uma mensagem, basta digitá-la e pressionar a tecla "Enter".</li>
+
+                <li>Novas mensagens recebidas do servidor são automaticamente exibidas no terminal.</li>
+
+                <li>Para sair da conversa, basta enviar a mensagem "sair". Todos os outros clientes ativos receberão uma mensagem indicando que este cliente saiu da conversa.</li>
+            </ul>
+        </li>
+    </ul>
+
+    <p>Servidores e Clientes funcionando em duas máquinas virtuais distintas</p>
+    <div><img class="img-fluid" src="Servidores e Clientes.png" alt="Servidores e Clientes funcionando em duas máquinas virtuais distintas" /></div>
+
+    <h2 id="funcionamento">Funcionamento</h2>
+
+    <h4 id="mensagem">Mensagem</h4>
+
+    <p>Uma mensagem possui o nome do cliente que a enviou, o instante em que ela foi enviada e o texto que está sendo transmitido.</p>
+
+    <h4 id="servidor-1">Servidor</h4>
+
+    <ul>
+        <li>Ao iniciar, carrega as configurações do sistema do arquivo config.properties.</li>
+
+        <li>Registra seu serviço no RMI Registry com o nome carregado do arquivo de configurações.
+            <ul>
+                <li>Este serviço envia mensagens via multicast para o IP e porta indicados no arquivo de configurações.</li>
+            </ul>
+        </li>
+
+        <li>Entra no grupo multicast e aguarda por novas mensagens vindas de outros servidores.
+            <ul>
+                <li>Quando uma mensagem é recebida via multicast, uma consulta ao RMI Registry é realizada, para que seja obtida a lista atual de serviços de clientes ativos.</li>
+
+                <li>A mensagem é enviada a todos os clientes deste servidor, presentes na lista, chamando o serviço de cada um deles.</li>
+
+                <li>Se algum cliente não puder ser localizado, ele é removido do RMI Registry.</li>
+            </ul>
+        </li>
+    </ul>
+
+    <h4 id="cliente">Cliente</h4>
+
+    <ul>
+        <li>Ao iniciar, carrega as configurações do sistema do arquivo config.properties.</li>
+
+        <li>Solicita o nome do cliente para o usuário.
+            <ul>
+                <li>Se o nome já estiver em uso, pede para que o usuário entre com outro nome.</li>
+            </ul>
+        </li>
+
+        <li>Registra seu serviço no RMI Registry com o nome carregado do arquivo de configurações associado ao nome do cliente obtido no passo anterior.
+            <ul>
+                <li>Este serviço imprime no terminal todas as mensagens recebidas.</li>
+            </ul>
+        </li>
+
+        <li>Utiliza o serviço disponibilizado pelo servidor para avisar a todos que entrou na conversa.</li>
+
+        <li>Aguarda o usuário digitar e enviar mensagens.
+            <ul>
+                <li>Se a mensagem enviada for "sair": utiliza o serviço disponibilizado pelo servidor para avisar a todos que saiu da conversa, remove o registro do seu serviço no RMI Registry e finaliza este processo.</li>
+
+                <li>Se qualquer outra mensagem for enviada: utiliza o serviço disponibilizado pelo servidor para enviar a mensagem a todos os participantes da conversa.</li>
+            </ul>
+        </li>
+    </ul>
+</body>
+
+</html>
